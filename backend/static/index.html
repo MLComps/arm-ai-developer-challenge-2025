@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambient Wildlife Monitoring</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Activity sidebar */
+        .activity-sidebar {
+            width: 380px;
+            background: #000000;
+            border-radius: 8px;
+            padding: 20px;
+            color: #ffffff;
+            height: calc(100vh - 40px);
+            position: sticky;
+            top: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #333;
+        }
+
+        .sidebar-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #666;
+        }
+
+        .status-indicator.active {
+            background: #00ff00;
+            box-shadow: 0 0 8px #00ff00;
+        }
+
+        .activity-log {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .activity-log::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .activity-log::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        .activity-log::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 2px;
+        }
+
+        .log-entry {
+            padding: 10px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            background: #111;
+            border-left: 2px solid #333;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .log-entry.phase {
+            background: #1a1a1a;
+            border-left: 2px solid #ffffff;
+            font-weight: 600;
+        }
+
+        .log-entry.success {
+            border-left-color: #00ff00;
+        }
+
+        .log-entry.warning {
+            border-left-color: #ffaa00;
+        }
+
+        .log-entry.error {
+            border-left-color: #ff0000;
+        }
+
+        .log-entry.info {
+            border-left-color: #666;
+        }
+
+        .log-timestamp {
+            color: #666;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .log-message {
+            color: #ffffff;
+        }
+
+        .log-details {
+            color: #888;
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
+        /* Progress bar in sidebar */
+        .progress-container {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #333;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 8px;
+            color: #888;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #ffffff;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Sections */
+        .section {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #000;
+        }
+
+        .section-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        /* Video section */
+        .video-container {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .video-container video::-webkit-media-controls {
+            background: rgba(0,0,0,0.5);
+        }
+
+        .video-placeholder {
+            text-align: center;
+            color: #999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-placeholder svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .video-placeholder p {
+            font-size: 13px;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #000;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            border-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #000;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+
+        select {
+            padding: 10px 16px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #fff;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+        }
+
+        /* Model info */
+        .model-info {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .model-label {
+            font-weight: 600;
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .model-classes {
+            color: #333;
+        }
+
+        .model-classes .class-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #000;
+            color: #fff;
+            border-radius: 3px;
+            margin: 2px 4px 2px 0;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Image grids */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+        }
+
+        .image-card {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            position: relative;
+            transition: transform 0.15s;
+        }
+
+        .image-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-card .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .image-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 8px 10px;
+            font-size: 11px;
+        }
+
+        .image-label .class-name {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .image-label .confidence {
+            opacity: 0.7;
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        /* VLM cards */
+        .vlm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+
+        .vlm-card {
+            border-radius: 4px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+            position: relative;
+            border: 4px solid transparent;
+            transition: all 0.15s;
+        }
+
+        /* Valid classification - GREEN overlay */
+        .vlm-card.valid {
+            border-color: #22c55e;
+            background: #f0fdf4;
+        }
+
+        .vlm-card.valid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Invalid classification - RED overlay */
+        .vlm-card.invalid {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .vlm-card.invalid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .vlm-card.pending {
+            border-color: #e0e0e0;
+            background: #f5f5f5;
+        }
+
+        .vlm-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .vlm-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 2;
+        }
+
+        .vlm-badge.valid {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .vlm-badge.invalid {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .vlm-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            color: #fff;
+            padding: 10px 12px;
+            font-size: 10px;
+            z-index: 2;
+        }
+
+        .vlm-info .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3px;
+        }
+
+        .vlm-info .row:last-child {
+            margin-bottom: 0;
+        }
+
+        .vlm-info .observation {
+            font-size: 9px;
+            opacity: 0.8;
+            margin-top: 4px;
+            font-style: italic;
+            line-height: 1.3;
+        }
+
+        /* Summary section */
+        .summary-content {
+            margin-top: 0;
+        }
+
+        .recommendation-box {
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #000;
+        }
+
+        .recommendation-box.retrain {
+            background: #f5f5f5;
+            border-left: 4px solid #000;
+        }
+
+        .recommendation-box.urgent {
+            background: #000;
+            color: #fff;
+            border: none;
+        }
+
+        .recommendation-box.urgent .recommendation-details {
+            color: #ccc;
+        }
+
+        .recommendation-box.ok {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+        }
+
+        .recommendation-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .recommendation-details {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            padding: 16px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #000;
+            font-family: 'SF Mono', monospace;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #666;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .action-list {
+            margin-top: 20px;
+            padding: 16px 20px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+
+        .action-list h4 {
+            font-size: 11px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .action-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .action-list li {
+            position: relative;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #333;
+            padding-left: 16px;
+        }
+
+        .action-list li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #000;
+            font-weight: bold;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 12px;
+        }
+
+        /* Loading state */
+        .loading-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-state h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #000;
+        }
+
+        .loading-state p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .loading-state .loading-detail {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .pulse-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            margin-left: 4px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Connection status banner */
+        .connection-banner {
+            background: #000;
+            color: #fff;
+            padding: 8px 16px;
+            font-size: 11px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .connection-banner.disconnected {
+            display: flex;
+            background: #ff0000;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .activity-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 300px;
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-banner" id="connection-banner">
+        Connecting to server...
+    </div>
+
+    <div class="container">
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Video Section -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Video Processing</h2>
+                    <span class="section-badge" id="video-status">Ready</span>
+                </div>
+
+                <div class="video-container" id="video-container">
+                    <video id="video-player" controls autoplay muted loop style="display: none;">
+                        <source id="video-source" src="" type="video/mp4">
+                    </video>
+                    <div class="video-placeholder" id="video-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        <p>Select a video to process</p>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <select id="video-select" onchange="onVideoSelected()">
+                        <option value="">Select Video...</option>
+                    </select>
+                    <select id="model-select" onchange="onModelSelected()">
+                        <option value="">Loading models...</option>
+                    </select>
+                    <button class="btn btn-primary" id="process-btn" onclick="startProcessing()">
+                        Start Processing
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetUI()">
+                        Reset
+                    </button>
+                </div>
+                <div class="model-info" id="model-info" style="display: none;">
+                    <span class="model-label">Classes:</span>
+                    <span class="model-classes" id="model-classes"></span>
+                </div>
+            </div>
+
+            <!-- Classifier Predictions -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Prediction — Image Classifier</h2>
+                    <span class="section-badge" id="classifier-count">0 frames</span>
+                </div>
+
+                <div class="image-grid" id="classifier-grid">
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p>Classified frames will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VLM Verification -->
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">VLM as Judge — Verifier</h2>
+                    <span class="section-badge" id="vlm-count">0 verified</span>
+                </div>
+
+                <div class="vlm-grid" id="vlm-grid">
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p>VLM verification results will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="section" id="summary-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">Summary</h2>
+                </div>
+
+                <div class="summary-content" id="summary-content">
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Sidebar -->
+        <div class="activity-sidebar">
+            <div class="sidebar-header">
+                <div class="status-indicator" id="status-indicator"></div>
+                <h2>Activity Log</h2>
+            </div>
+
+            <div class="activity-log" id="activity-log">
+                <div class="log-entry info">
+                    <div class="log-timestamp">System</div>
+                    <div class="log-message">Ready to process videos</div>
+                    <div class="log-details">Select a video and click "Start Processing"</div>
+                </div>
+            </div>
+
+            <div class="progress-container" id="progress-container" style="display: none;">
+                <div class="progress-label">
+                    <span id="progress-phase">Processing...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            // Base path for video assets (relative to project root)
+            videoBasePath: 'video-assets/normal/',
+            // Available videos
+            videos: ['1.mp4', '2.mp4', '2_black.mp4', '3.mp4', 'fox.mp4']
+        };
+
+        // State
+        let ws = null;
+        let currentJobId = null;
+        let classifiedFrames = [];
+        let verifiedFrames = [];
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 10;
+        let availableModels = [];
+        let selectedModel = null;
+
+        // API base URL
+        const API_BASE = window.location.origin;
+
+        // Initialize video dropdown
+        function initVideoDropdown() {
+            const select = document.getElementById('video-select');
+            CONFIG.videos.forEach(video => {
+                const option = document.createElement('option');
+                option.value = CONFIG.videoBasePath + video;
+                option.textContent = video;
+                select.appendChild(option);
+            });
+        }
+
+        // Fetch available models from API
+        async function fetchModels() {
+            try {
+                const response = await fetch(`${API_BASE}/api/videos/models`);
+                if (response.ok) {
+                    availableModels = await response.json();
+                    initModelDropdown();
+                } else {
+                    console.error('Failed to fetch models');
+                    document.getElementById('model-select').innerHTML =
+                        '<option value="">No models found</option>';
+                }
+            } catch (error) {
+                console.error('Error fetching models:', error);
+                document.getElementById('model-select').innerHTML =
+                    '<option value="">Error loading models</option>';
+            }
+        }
+
+        // Initialize model dropdown
+        function initModelDropdown() {
+            const select = document.getElementById('model-select');
+            select.innerHTML = '';
+
+            if (availableModels.length === 0) {
+                select.innerHTML = '<option value="">No models found</option>';
+                return;
+            }
+
+            availableModels.forEach((model, index) => {
+                const option = document.createElement('option');
+                option.value = model.path;
+                option.textContent = model.name;
+                option.dataset.classes = JSON.stringify(model.classes);
+                select.appendChild(option);
+            });
+
+            // Auto-select first model
+            if (availableModels.length > 0) {
+                select.selectedIndex = 0;
+                onModelSelected();
+            }
+        }
+
+        // Handle model selection
+        function onModelSelected() {
+            const select = document.getElementById('model-select');
+            const modelPath = select.value;
+            const modelInfo = document.getElementById('model-info');
+            const modelClasses = document.getElementById('model-classes');
+
+            if (modelPath) {
+                selectedModel = availableModels.find(m => m.path === modelPath);
+                if (selectedModel && selectedModel.classes.length > 0) {
+                    modelClasses.innerHTML = selectedModel.classes
+                        .map(c => `<span class="class-tag">${c}</span>`)
+                        .join('');
+                    modelInfo.style.display = 'block';
+                    addLog('Model selected', 'info', `${selectedModel.name} (${selectedModel.classes.length} classes)`);
+                } else {
+                    modelInfo.style.display = 'none';
+                }
+            } else {
+                modelInfo.style.display = 'none';
+                selectedModel = null;
+            }
+        }
+
+        // Handle video selection - show preview
+        function onVideoSelected() {
+            const select = document.getElementById('video-select');
+            const videoPath = select.value;
+            const videoPlayer = document.getElementById('video-player');
+            const videoSource = document.getElementById('video-source');
+            const placeholder = document.getElementById('video-placeholder');
+
+            if (videoPath) {
+                // Set video source - serve from /videos endpoint
+                const videoName = videoPath.split('/').pop();
+                videoSource.src = `/videos/${videoName}`;
+                videoPlayer.load();
+                videoPlayer.style.display = 'block';
+                placeholder.style.display = 'none';
+                videoPlayer.play().catch(e => console.log('Autoplay blocked:', e));
+                addLog('Video loaded', 'info', videoName);
+            } else {
+                videoPlayer.style.display = 'none';
+                placeholder.style.display = 'flex';
+            }
+        }
+
+        // Connect WebSocket
+        function connectWebSocket() {
+            const banner = document.getElementById('connection-banner');
+            banner.classList.add('disconnected');
+            banner.textContent = 'Connecting to server...';
+
+            try {
+                ws = new WebSocket(`ws://${window.location.host}/ws`);
+
+                ws.onopen = () => {
+                    reconnectAttempts = 0;
+                    banner.classList.remove('disconnected');
+                    addLog('Connected to server', 'success');
+                    document.getElementById('status-indicator').classList.add('active');
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                };
+
+                ws.onclose = () => {
+                    document.getElementById('status-indicator').classList.remove('active');
+
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        banner.classList.add('disconnected');
+                        banner.textContent = `Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})`;
+                        setTimeout(connectWebSocket, 3000);
+                    } else {
+                        banner.textContent = 'Connection failed. Please refresh the page.';
+                        addLog('Connection lost', 'error');
+                    }
+                };
+
+                ws.onerror = () => {
+                    // Error will trigger onclose
+                };
+
+            } catch (error) {
+                banner.classList.add('disconnected');
+                banner.textContent = 'Failed to connect. Is the server running?';
+            }
+        }
+
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            console.log('WS:', data);
+
+            const phase = data.phase || data.event_type;
+
+            switch (phase) {
+                case 'job_started':
+                    addLog('Processing started', 'phase', `Video: ${data.video_path.split('/').pop()}`);
+                    document.getElementById('video-status').textContent = 'Processing';
+                    document.getElementById('progress-container').style.display = 'block';
+                    break;
+
+                case 'motion_detection':
+                    handleMotionDetection(data);
+                    break;
+
+                case 'keyframe_sampling':
+                    handleKeyframeSampling(data);
+                    break;
+
+                case 'frame_selection':
+                    handleFrameSelection(data);
+                    break;
+
+                case 'classification':
+                    handleClassification(data);
+                    break;
+
+                case 'vlm_verification':
+                    handleVLMVerification(data);
+                    break;
+
+                case 'drift_detection':
+                    handleDriftDetection(data);
+                    break;
+
+                case 'retraining_recommendation':
+                    handleRecommendation(data);
+                    break;
+
+                case 'job_completed':
+                    addLog('Processing complete', 'success', data.recommendation);
+                    document.getElementById('video-status').textContent = 'Complete';
+                    document.getElementById('process-btn').disabled = false;
+                    fetchResults(data.job_id);
+                    break;
+
+                case 'job_failed':
+                    addLog('Processing failed', 'error', data.error);
+                    document.getElementById('video-status').textContent = 'Failed';
+                    document.getElementById('process-btn').disabled = false;
+                    break;
+            }
+        }
+
+        // Phase handlers
+        function handleMotionDetection(data) {
+            if (data.status === 'started') {
+                addLog('PHASE 1: Motion Detection', 'phase', `Analyzing ${data.total_frames} frames @ ${data.fps?.toFixed(1) || '?'} FPS`);
+            } else if (data.status === 'processing') {
+                updateProgress('Motion Detection', data.progress_percent);
+                if (data.current_frame % 100 === 0) {
+                    addLog('Scanning for motion...', 'info', `Frame ${data.current_frame}/${data.total_frames} — ${data.motion_frames_found} motion frames`);
+                }
+            } else if (data.status === 'completed') {
+                addLog('Motion detection complete', 'success', `${data.motion_regions} regions found (${data.motion_percentage}% activity)`);
+            }
+        }
+
+        function handleKeyframeSampling(data) {
+            if (data.status === 'started') {
+                addLog('PHASE 2: Keyframe Extraction', 'phase', `Sampling from ${data.total_regions} motion regions`);
+            } else if (data.status === 'processing') {
+                updateProgress('Keyframe Sampling', data.progress_percent);
+                addLog('Extracting keyframes...', 'info', `Region ${data.current_region}/${data.total_regions} — ${data.keyframes_sampled} frames extracted`);
+            } else if (data.status === 'completed') {
+                addLog('Keyframe extraction complete', 'success', `${data.total_keyframes} keyframes extracted`);
+            }
+        }
+
+        function handleFrameSelection(data) {
+            if (data.status === 'started') {
+                addLog('PHASE 2.5: Frame Selection', 'phase', `Method: ${data.method}`);
+            } else if (data.status === 'completed') {
+                addLog('Frame selection complete', 'success', `${data.selected_frames} frames selected (${data.reduction_percent}% reduction)`);
+            }
+        }
+
+        function handleClassification(data) {
+            if (data.status === 'started') {
+                addLog('PHASE 3: Classification', 'phase', `Classifying ${data.total_frames} frames`);
+                classifiedFrames = [];
+                document.getElementById('classifier-grid').innerHTML = `
+                    <div class="loading-state" style="grid-column: 1/-1;">
+                        <div class="loading-spinner"></div>
+                        <h3>Classifying Frames<span class="pulse-dot"></span></h3>
+                        <p>Running YOLO classifier on ${data.total_frames} frames</p>
+                        <p class="loading-detail">This may take a moment...</p>
+                    </div>
+                `;
+            } else if (data.status === 'processing') {
+                updateProgress('Classification', data.progress_percent);
+                if (data.last_prediction) {
+                    // Store the prediction for later display
+                    classifiedFrames.push(data.last_prediction);
+                    // Update loading state with progress
+                    const loadingState = document.querySelector('#classifier-grid .loading-state');
+                    if (loadingState) {
+                        loadingState.querySelector('p').textContent =
+                            `Classified ${classifiedFrames.length} frames...`;
+                        loadingState.querySelector('.loading-detail').textContent =
+                            `Latest: ${data.last_prediction.class} (${(data.last_prediction.confidence * 100).toFixed(1)}%)`;
+                    }
+                    addLog('Classifying...', 'info',
+                        `Frame ${data.last_prediction.frame_idx} → ${data.last_prediction.class.toUpperCase()} (${(data.last_prediction.confidence * 100).toFixed(1)}%)`);
+                }
+            } else if (data.status === 'completed') {
+                addLog('Classification complete', 'success', formatClassDistribution(data.class_distribution));
+                document.getElementById('classifier-count').textContent = `${data.total_classified} frames`;
+                // Display all classified frames with images
+                displayClassifiedFrames();
+            }
+        }
+
+        function handleVLMVerification(data) {
+            if (data.status === 'started') {
+                const sampledInfo = data.sampled_from ? ` (sampled from ${data.sampled_from})` : '';
+                addLog('PHASE 4: VLM Verification', 'phase', `Verifying ${data.total_predictions} frames${sampledInfo}`);
+                verifiedFrames = [];
+                vlmCurrentFrame = 0;
+                vlmTotalFrames = data.total_predictions;
+                document.getElementById('vlm-grid').innerHTML = `
+                    <div class="loading-state" style="grid-column: 1/-1;">
+                        <div class="loading-spinner"></div>
+                        <h3>VLM Analyzing Images<span class="pulse-dot"></span></h3>
+                        <p>Sending ${data.total_predictions} frames to Vision Language Model</p>
+                        <p class="loading-detail">Each frame takes ~5-10 seconds to analyze...</p>
+                    </div>
+                `;
+                document.getElementById('vlm-count').textContent = 'Analyzing...';
+            } else if (data.status === 'processing') {
+                updateProgress('VLM Verification', data.progress_percent);
+                // Remove loading state on first result
+                const loadingState = document.querySelector('#vlm-grid .loading-state');
+                if (loadingState) {
+                    loadingState.remove();
+                }
+                if (data.last_verification) {
+                    const v = data.last_verification;
+                    const symbol = v.class_valid ? '✓' : '✗';
+                    const status = v.class_valid ? 'success' : 'warning';
+                    addLog(`${symbol} Frame ${v.frame_idx}: ${v.classifier}`, status,
+                        `Conf: ${(v.classifier_confidence * 100).toFixed(1)}% | ${v.observation || ''}`);
+                    addVerifiedFrame(v);
+                    // Update count as we go
+                    const currentCount = document.querySelectorAll('#vlm-grid .vlm-card').length;
+                    document.getElementById('vlm-count').textContent = `${currentCount}/${vlmTotalFrames} verified`;
+                }
+            } else if (data.status === 'completed') {
+                const validRate = data.validity_rate || 0;
+                addLog('VLM verification complete', validRate >= 70 ? 'success' : 'warning',
+                    `${data.valid_count} valid, ${data.invalid_count} invalid (${validRate}% accuracy)`);
+                document.getElementById('vlm-count').textContent = `${data.total_verified} verified`;
+            }
+        }
+
+        // Track VLM progress
+        let vlmCurrentFrame = 0;
+        let vlmTotalFrames = 0;
+
+        function handleDriftDetection(data) {
+            if (data.status === 'started') {
+                addLog('PHASE 5: Drift Detection', 'phase', 'Analyzing model performance');
+            } else if (data.status === 'completed') {
+                const status = data.drift_detected ? 'warning' : 'success';
+                const msg = data.drift_detected ? '⚠ Drift detected' : '✓ No drift detected';
+                addLog(msg, status, `Score: ${data.drift_score.toFixed(3)} | Mismatch: ${(data.mismatch_rate * 100).toFixed(1)}%`);
+            }
+        }
+
+        function handleRecommendation(data) {
+            if (data.status === 'started') {
+                addLog('PHASE 6: Recommendation', 'phase', 'Generating recommendation');
+            } else if (data.status === 'completed') {
+                showSummary(data);
+            }
+        }
+
+        // UI helpers
+        function addLog(message, type = 'info', details = null) {
+            const log = document.getElementById('activity-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+            entry.innerHTML = `
+                <div class="log-timestamp">${time}</div>
+                <div class="log-message">${message}</div>
+                ${details ? `<div class="log-details">${details}</div>` : ''}
+            `;
+
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function updateProgress(phase, percent) {
+            document.getElementById('progress-phase').textContent = phase;
+            document.getElementById('progress-percent').textContent = `${percent.toFixed(1)}%`;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+        }
+
+        // Convert absolute path to URL path
+        function pathToUrl(absolutePath) {
+            if (!absolutePath) return null;
+            // Extract the relative path after 'output/'
+            const outputIndex = absolutePath.indexOf('output/');
+            if (outputIndex !== -1) {
+                return '/' + absolutePath.substring(outputIndex);
+            }
+            // Try to extract just the job folder onwards
+            const jobMatch = absolutePath.match(/job_[^/]+\/.+/);
+            if (jobMatch) {
+                return '/output/' + jobMatch[0];
+            }
+            return null;
+        }
+
+        // Display all classified frames at once with images
+        function displayClassifiedFrames() {
+            const grid = document.getElementById('classifier-grid');
+            grid.innerHTML = '';
+
+            classifiedFrames.forEach(prediction => {
+                const card = document.createElement('div');
+                card.className = 'image-card';
+
+                const imageUrl = pathToUrl(prediction.saved_path);
+
+                if (imageUrl) {
+                    card.innerHTML = `
+                        <img src="${imageUrl}" alt="Frame ${prediction.frame_idx}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="placeholder" style="display:none;">Frame ${prediction.frame_idx}</div>
+                        <div class="image-label">
+                            <div class="class-name">${prediction.class}</div>
+                            <div class="confidence">${(prediction.confidence * 100).toFixed(1)}%</div>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="placeholder">Frame ${prediction.frame_idx}</div>
+                        <div class="image-label">
+                            <div class="class-name">${prediction.class}</div>
+                            <div class="confidence">${(prediction.confidence * 100).toFixed(1)}%</div>
+                        </div>
+                    `;
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        function addClassifiedFrame(prediction) {
+            const grid = document.getElementById('classifier-grid');
+            const emptyState = grid.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            const card = document.createElement('div');
+            card.className = 'image-card';
+            card.innerHTML = `
+                <div class="placeholder">Frame ${prediction.frame_idx}</div>
+                <div class="image-label">
+                    <div class="class-name">${prediction.class}</div>
+                    <div class="confidence">${(prediction.confidence * 100).toFixed(1)}% confidence</div>
+                </div>
+            `;
+            grid.appendChild(card);
+        }
+
+        function addVerifiedFrame(verification) {
+            const grid = document.getElementById('vlm-grid');
+            const emptyState = grid.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+
+            // Use class_valid for status (valid = green, invalid = red)
+            const isValid = verification.class_valid;
+            const status = isValid ? 'valid' : 'invalid';
+            const card = document.createElement('div');
+            card.className = `vlm-card ${status}`;
+
+            const imageUrl = pathToUrl(verification.saved_path);
+            const confidence = verification.classifier_confidence
+                ? `${(verification.classifier_confidence * 100).toFixed(1)}%`
+                : 'N/A';
+            const observation = verification.observation || '';
+
+            if (imageUrl) {
+                card.innerHTML = `
+                    <img src="${imageUrl}" alt="Frame ${verification.frame_idx}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="placeholder" style="display:none;">Frame ${verification.frame_idx}</div>
+                    <span class="vlm-badge ${status}">${isValid ? 'Valid' : 'Invalid'}</span>
+                    <div class="vlm-info">
+                        <div class="row">
+                            <span>Class:</span>
+                            <span>${verification.classifier}</span>
+                        </div>
+                        <div class="row">
+                            <span>Confidence:</span>
+                            <span>${confidence}</span>
+                        </div>
+                        ${observation ? `<div class="observation">${observation}</div>` : ''}
+                    </div>
+                `;
+            } else {
+                card.innerHTML = `
+                    <div class="placeholder">Frame ${verification.frame_idx}</div>
+                    <span class="vlm-badge ${status}">${isValid ? 'Valid' : 'Invalid'}</span>
+                    <div class="vlm-info">
+                        <div class="row">
+                            <span>Class:</span>
+                            <span>${verification.classifier}</span>
+                        </div>
+                        <div class="row">
+                            <span>Confidence:</span>
+                            <span>${confidence}</span>
+                        </div>
+                        ${observation ? `<div class="observation">${observation}</div>` : ''}
+                    </div>
+                `;
+            }
+            grid.appendChild(card);
+        }
+
+        function showSummary(data) {
+            const section = document.getElementById('summary-section');
+            const content = document.getElementById('summary-content');
+
+            let boxClass = 'ok';
+            let icon = '✓';
+            if (data.recommendation === 'URGENT_RETRAIN') {
+                boxClass = 'urgent';
+                icon = '⚠';
+            } else if (data.recommendation === 'RETRAIN_RECOMMENDED') {
+                boxClass = 'retrain';
+                icon = '⚠';
+            } else if (data.recommendation === 'MONITOR_CLOSELY') {
+                boxClass = 'retrain';
+                icon = '👁';
+            }
+
+            // Extract metrics from the new format
+            const metrics = data.metrics || {};
+            const aggregateConf = metrics.aggregate_confidence !== undefined
+                ? (metrics.aggregate_confidence * 100).toFixed(1)
+                : 'N/A';
+            const avgClassifierConf = metrics.avg_classifier_confidence !== undefined
+                ? (metrics.avg_classifier_confidence * 100).toFixed(1)
+                : 'N/A';
+            const vlmValidityRate = metrics.vlm_validity_rate !== undefined
+                ? (metrics.vlm_validity_rate * 100).toFixed(1)
+                : 'N/A';
+            const threshold = metrics.threshold !== undefined
+                ? (metrics.threshold * 100).toFixed(0)
+                : '70';
+
+            content.innerHTML = `
+                <div class="recommendation-box ${boxClass}">
+                    <div class="recommendation-title">
+                        ${icon} ${data.recommendation.replace(/_/g, ' ')}
+                    </div>
+                    <div class="recommendation-details">
+                        ${data.rationale}
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${aggregateConf}%</div>
+                        <div class="stat-label">Aggregate Confidence</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${avgClassifierConf}%</div>
+                        <div class="stat-label">Avg Classifier Conf</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${vlmValidityRate}%</div>
+                        <div class="stat-label">VLM Validity Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${threshold}%</div>
+                        <div class="stat-label">Threshold</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${metrics.valid_count || 0}</div>
+                        <div class="stat-label">Valid</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${metrics.invalid_count || 0}</div>
+                        <div class="stat-label">Invalid</div>
+                    </div>
+                </div>
+
+                ${data.actions ? `
+                <div class="action-list">
+                    <h4>Recommended Actions</h4>
+                    <ul>
+                        ${data.actions.map(a => `<li>${a}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+
+                ${data.invalid_frames && data.invalid_frames.length > 0 ? `
+                <div class="action-list" style="margin-top: 12px;">
+                    <h4>Invalid Classifications</h4>
+                    <ul>
+                        ${data.invalid_frames.map(f => `<li>Frame ${f.frame_idx}: ${f.predicted_class} (${(f.confidence * 100).toFixed(1)}%) - ${f.observation || 'No observation'}</li>`).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+            `;
+
+            section.style.display = 'block';
+            addLog('Summary generated', boxClass === 'urgent' ? 'error' : (boxClass === 'retrain' ? 'warning' : 'success'),
+                data.recommendation.replace(/_/g, ' '));
+        }
+
+        function formatClassDistribution(dist) {
+            if (!dist) return '';
+            return Object.entries(dist)
+                .map(([cls, count]) => `${cls}: ${count}`)
+                .join(' | ');
+        }
+
+        // API calls
+        async function startProcessing() {
+            const videoPath = document.getElementById('video-select').value;
+            const modelPath = document.getElementById('model-select').value;
+
+            if (!videoPath) {
+                alert('Please select a video first');
+                return;
+            }
+
+            if (!modelPath) {
+                alert('Please select a classifier model');
+                return;
+            }
+
+            document.getElementById('process-btn').disabled = true;
+            resetUI(false);
+
+            const videoName = videoPath.split('/').pop();
+            const modelName = selectedModel ? selectedModel.name : modelPath.split('/')[1];
+            addLog('Starting processing...', 'info', `${videoName} with ${modelName}`);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/videos/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        video_path: videoPath,
+                        classifier_model_path: modelPath,
+                        frame_selection_method: 'balanced',
+                        num_select: 9,
+                        samples_per_region: 5,
+                        save_keyframes: true,
+                        save_classified: true
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to start processing');
+                }
+
+                const job = await response.json();
+                currentJobId = job.job_id;
+                addLog(`Job created: ${job.job_id}`, 'success');
+
+            } catch (error) {
+                addLog('Failed to start', 'error', error.message);
+                document.getElementById('process-btn').disabled = false;
+            }
+        }
+
+        async function fetchResults(jobId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/videos/${jobId}/results`);
+                if (response.ok) {
+                    const results = await response.json();
+                    console.log('Results:', results);
+                }
+            } catch (error) {
+                console.error('Failed to fetch results:', error);
+            }
+        }
+
+        function resetUI(clearLogs = true) {
+            document.getElementById('classifier-grid').innerHTML = `
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p>Classified frames will appear here</p>
+                </div>
+            `;
+
+            document.getElementById('vlm-grid').innerHTML = `
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>VLM verification results will appear here</p>
+                </div>
+            `;
+
+            document.getElementById('classifier-count').textContent = '0 frames';
+            document.getElementById('vlm-count').textContent = '0 verified';
+            document.getElementById('video-status').textContent = 'Ready';
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('summary-section').style.display = 'none';
+            document.getElementById('process-btn').disabled = false;
+
+            if (clearLogs) {
+                document.getElementById('activity-log').innerHTML = `
+                    <div class="log-entry info">
+                        <div class="log-timestamp">System</div>
+                        <div class="log-message">Ready to process videos</div>
+                        <div class="log-details">Select a video and click "Start Processing"</div>
+                    </div>
+                `;
+
+                // Also reset video player when fully resetting
+                const videoPlayer = document.getElementById('video-player');
+                const placeholder = document.getElementById('video-placeholder');
+                videoPlayer.style.display = 'none';
+                placeholder.style.display = 'flex';
+                document.getElementById('video-select').value = '';
+            }
+
+            classifiedFrames = [];
+            verifiedFrames = [];
+            currentJobId = null;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initVideoDropdown();
+            fetchModels();
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
