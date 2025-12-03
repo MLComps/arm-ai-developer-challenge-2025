@@ -3,4 +3,5 @@ The repo contains the codebase for the ARM Developer Edge AI  competition.
 
 # TODO 
 - Explore executorch for Ultralytics
-- ?
+- Human detection system 
+- Animal activity tracker 
