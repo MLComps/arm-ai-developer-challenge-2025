@@ -629,6 +629,61 @@
             font-size: 12px;
         }
 
+        /* Loading state */
+        .loading-state {
+            text-align: center;
+            padding: 60px 40px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-state h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #000;
+        }
+
+        .loading-state p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .loading-state .loading-detail {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .pulse-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            margin-left: 4px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
         /* Connection status banner */
         .connection-banner {
             background: #000;
@@ -967,12 +1022,27 @@
             if (data.status === 'started') {
                 addLog('PHASE 3: Classification', 'phase', `Classifying ${data.total_frames} frames`);
                 classifiedFrames = [];
-                document.getElementById('classifier-grid').innerHTML = '';
+                document.getElementById('classifier-grid').innerHTML = `
+                    <div class="loading-state" style="grid-column: 1/-1;">
+                        <div class="loading-spinner"></div>
+                        <h3>Classifying Frames<span class="pulse-dot"></span></h3>
+                        <p>Running YOLO classifier on ${data.total_frames} frames</p>
+                        <p class="loading-detail">This may take a moment...</p>
+                    </div>
+                `;
             } else if (data.status === 'processing') {
                 updateProgress('Classification', data.progress_percent);
                 if (data.last_prediction) {
                     // Store the prediction for later display
                     classifiedFrames.push(data.last_prediction);
+                    // Update loading state with progress
+                    const loadingState = document.querySelector('#classifier-grid .loading-state');
+                    if (loadingState) {
+                        loadingState.querySelector('p').textContent =
+                            `Classified ${classifiedFrames.length} frames...`;
+                        loadingState.querySelector('.loading-detail').textContent =
+                            `Latest: ${data.last_prediction.class} (${(data.last_prediction.confidence * 100).toFixed(1)}%)`;
+                    }
                     addLog('Classifying...', 'info',
                         `Frame ${data.last_prediction.frame_idx} → ${data.last_prediction.class.toUpperCase()} (${(data.last_prediction.confidence * 100).toFixed(1)}%)`);
                 }
@@ -989,9 +1059,24 @@
                 const sampledInfo = data.sampled_from ? ` (sampled from ${data.sampled_from})` : '';
                 addLog('PHASE 4: VLM Verification', 'phase', `Verifying ${data.total_predictions} frames${sampledInfo}`);
                 verifiedFrames = [];
-                document.getElementById('vlm-grid').innerHTML = '';
+                vlmCurrentFrame = 0;
+                vlmTotalFrames = data.total_predictions;
+                document.getElementById('vlm-grid').innerHTML = `
+                    <div class="loading-state" style="grid-column: 1/-1;">
+                        <div class="loading-spinner"></div>
+                        <h3>VLM Analyzing Images<span class="pulse-dot"></span></h3>
+                        <p>Sending ${data.total_predictions} frames to Vision Language Model</p>
+                        <p class="loading-detail">Each frame takes ~5-10 seconds to analyze...</p>
+                    </div>
+                `;
+                document.getElementById('vlm-count').textContent = 'Analyzing...';
             } else if (data.status === 'processing') {
                 updateProgress('VLM Verification', data.progress_percent);
+                // Remove loading state on first result
+                const loadingState = document.querySelector('#vlm-grid .loading-state');
+                if (loadingState) {
+                    loadingState.remove();
+                }
                 if (data.last_verification) {
                     const v = data.last_verification;
                     const symbol = v.class_valid ? '✓' : '✗';
@@ -999,6 +1084,9 @@
                     addLog(`${symbol} Frame ${v.frame_idx}: ${v.classifier}`, status,
                         `Conf: ${(v.classifier_confidence * 100).toFixed(1)}% | ${v.observation || ''}`);
                     addVerifiedFrame(v);
+                    // Update count as we go
+                    const currentCount = document.querySelectorAll('#vlm-grid .vlm-card').length;
+                    document.getElementById('vlm-count').textContent = `${currentCount}/${vlmTotalFrames} verified`;
                 }
             } else if (data.status === 'completed') {
                 const validRate = data.validity_rate || 0;
@@ -1007,6 +1095,10 @@
                 document.getElementById('vlm-count').textContent = `${data.total_verified} verified`;
             }
         }
+
+        // Track VLM progress
+        let vlmCurrentFrame = 0;
+        let vlmTotalFrames = 0;
 
         function handleDriftDetection(data) {
             if (data.status === 'started') {
