@@ -3,9 +3,10 @@ Video Processing API Routes
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks, WebSocket, WebSocketDisconnect
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import os
 from pathlib import Path
+import glob
 
 from ...models.schemas import (
     VideoProcessRequest,
@@ -27,6 +28,69 @@ def resolve_path(path: str) -> str:
         return path
     project_root = get_project_root()
     return str(project_root / path)
+
+
+def get_model_classes(model_path: str) -> List[str]:
+    """Get class names from a YOLO model"""
+    try:
+        from ultralytics import YOLO
+        model = YOLO(model_path)
+        if hasattr(model, 'names'):
+            if isinstance(model.names, dict):
+                return list(model.names.values())
+            return list(model.names)
+        return []
+    except Exception as e:
+        return []
+
+
+@router.get("/models", response_model=List[Dict[str, Any]])
+async def list_models():
+    """
+    List all available classifier models.
+
+    Returns list of models with their paths and classes.
+    """
+    project_root = get_project_root()
+    models_dir = project_root / "classifier-models"
+
+    if not models_dir.exists():
+        return []
+
+    models = []
+
+    # Find all model directories
+    for model_dir in sorted(models_dir.iterdir()):
+        if model_dir.is_dir():
+            # Look for weights/best.pt
+            best_weights = model_dir / "weights" / "best.pt"
+            if best_weights.exists():
+                relative_path = f"classifier-models/{model_dir.name}/weights/best.pt"
+
+                # Get classes from the model
+                classes = get_model_classes(str(best_weights))
+
+                models.append({
+                    "name": model_dir.name,
+                    "path": relative_path,
+                    "classes": classes,
+                    "weights_file": "best.pt"
+                })
+
+    return models
+
+
+@router.get("/models/{model_name}/classes")
+async def get_model_classes_endpoint(model_name: str):
+    """Get classes for a specific model"""
+    project_root = get_project_root()
+    model_path = project_root / "classifier-models" / model_name / "weights" / "best.pt"
+
+    if not model_path.exists():
+        raise HTTPException(status_code=404, detail=f"Model not found: {model_name}")
+
+    classes = get_model_classes(str(model_path))
+    return {"model": model_name, "classes": classes}
 
 
 @router.post("/process", response_model=JobInfo)

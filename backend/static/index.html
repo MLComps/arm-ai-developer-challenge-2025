@@ -317,6 +317,38 @@
             box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
         }
 
+        /* Model info */
+        .model-info {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: #f5f5f5;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .model-label {
+            font-weight: 600;
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .model-classes {
+            color: #333;
+        }
+
+        .model-classes .class-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #000;
+            color: #fff;
+            border-radius: 3px;
+            margin: 2px 4px 2px 0;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         /* Image grids */
         .image-grid {
             display: grid;
@@ -747,12 +779,19 @@
                     <select id="video-select" onchange="onVideoSelected()">
                         <option value="">Select Video...</option>
                     </select>
+                    <select id="model-select" onchange="onModelSelected()">
+                        <option value="">Loading models...</option>
+                    </select>
                     <button class="btn btn-primary" id="process-btn" onclick="startProcessing()">
                         Start Processing
                     </button>
                     <button class="btn btn-secondary" onclick="resetUI()">
                         Reset
                     </button>
+                </div>
+                <div class="model-info" id="model-info" style="display: none;">
+                    <span class="model-label">Classes:</span>
+                    <span class="model-classes" id="model-classes"></span>
                 </div>
             </div>
 
@@ -834,9 +873,7 @@
             // Base path for video assets (relative to project root)
             videoBasePath: 'video-assets/normal/',
             // Available videos
-            videos: ['1.mp4', '2.mp4', '2_black.mp4', '3.mp4', 'fox.mp4'],
-            // Classifier model path
-            modelPath: 'classifier-models/train-fox-background/weights/best.pt'
+            videos: ['1.mp4', '2.mp4', '2_black.mp4', '3.mp4', 'fox.mp4']
         };
 
         // State
@@ -846,6 +883,8 @@
         let verifiedFrames = [];
         let reconnectAttempts = 0;
         const maxReconnectAttempts = 10;
+        let availableModels = [];
+        let selectedModel = null;
 
         // API base URL
         const API_BASE = window.location.origin;
@@ -859,6 +898,74 @@
                 option.textContent = video;
                 select.appendChild(option);
             });
+        }
+
+        // Fetch available models from API
+        async function fetchModels() {
+            try {
+                const response = await fetch(`${API_BASE}/api/videos/models`);
+                if (response.ok) {
+                    availableModels = await response.json();
+                    initModelDropdown();
+                } else {
+                    console.error('Failed to fetch models');
+                    document.getElementById('model-select').innerHTML =
+                        '<option value="">No models found</option>';
+                }
+            } catch (error) {
+                console.error('Error fetching models:', error);
+                document.getElementById('model-select').innerHTML =
+                    '<option value="">Error loading models</option>';
+            }
+        }
+
+        // Initialize model dropdown
+        function initModelDropdown() {
+            const select = document.getElementById('model-select');
+            select.innerHTML = '';
+
+            if (availableModels.length === 0) {
+                select.innerHTML = '<option value="">No models found</option>';
+                return;
+            }
+
+            availableModels.forEach((model, index) => {
+                const option = document.createElement('option');
+                option.value = model.path;
+                option.textContent = model.name;
+                option.dataset.classes = JSON.stringify(model.classes);
+                select.appendChild(option);
+            });
+
+            // Auto-select first model
+            if (availableModels.length > 0) {
+                select.selectedIndex = 0;
+                onModelSelected();
+            }
+        }
+
+        // Handle model selection
+        function onModelSelected() {
+            const select = document.getElementById('model-select');
+            const modelPath = select.value;
+            const modelInfo = document.getElementById('model-info');
+            const modelClasses = document.getElementById('model-classes');
+
+            if (modelPath) {
+                selectedModel = availableModels.find(m => m.path === modelPath);
+                if (selectedModel && selectedModel.classes.length > 0) {
+                    modelClasses.innerHTML = selectedModel.classes
+                        .map(c => `<span class="class-tag">${c}</span>`)
+                        .join('');
+                    modelInfo.style.display = 'block';
+                    addLog('Model selected', 'info', `${selectedModel.name} (${selectedModel.classes.length} classes)`);
+                } else {
+                    modelInfo.style.display = 'none';
+                }
+            } else {
+                modelInfo.style.display = 'none';
+                selectedModel = null;
+            }
         }
 
         // Handle video selection - show preview
@@ -1364,14 +1471,24 @@
         // API calls
         async function startProcessing() {
             const videoPath = document.getElementById('video-select').value;
+            const modelPath = document.getElementById('model-select').value;
+
             if (!videoPath) {
                 alert('Please select a video first');
                 return;
             }
 
+            if (!modelPath) {
+                alert('Please select a classifier model');
+                return;
+            }
+
             document.getElementById('process-btn').disabled = true;
             resetUI(false);
-            addLog('Starting processing...', 'info', videoPath.split('/').pop());
+
+            const videoName = videoPath.split('/').pop();
+            const modelName = selectedModel ? selectedModel.name : modelPath.split('/')[1];
+            addLog('Starting processing...', 'info', `${videoName} with ${modelName}`);
 
             try {
                 const response = await fetch(`${API_BASE}/api/videos/process`, {
@@ -1379,7 +1496,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         video_path: videoPath,
-                        classifier_model_path: CONFIG.modelPath,
+                        classifier_model_path: modelPath,
                         frame_selection_method: 'balanced',
                         num_select: 9,
                         samples_per_region: 5,
@@ -1467,6 +1584,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             initVideoDropdown();
+            fetchModels();
             connectWebSocket();
         });
     </script>
