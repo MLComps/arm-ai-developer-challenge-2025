@@ -26,7 +26,7 @@ def send_image_and_prompt(image_path: str, prompt: str, model: str = "qwen3-vl:2
     return result.get("response") or result.get("message", {}).get("content")
 
 if __name__ == "__main__":
-    img_path = "./testing-images/testing-7.jpg"
+    img_path = "/Users/mbohbless/Software/competitions/arm-ai-developer-challenge-2025/testing-vlm/testing-7.jpg"
     user_prompt = "Does the animal in the images correspond to the caption on them? Look at the image carefully before giving an answer"
     out = send_image_and_prompt(img_path, user_prompt)
     print("Model output:", out)
