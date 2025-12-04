@@ -144,7 +144,8 @@ async def process_video(
             samples_per_region=request.samples_per_region,
             motion_threshold=request.motion_threshold,
             save_keyframes=request.save_keyframes,
-            save_classified=request.save_classified
+            save_classified=request.save_classified,
+            classifier_model_path=model_path
         )
 
     background_tasks.add_task(run_processing)
@@ -168,14 +169,22 @@ async def batch_process(
     """
     Queue all videos in a directory for processing.
     """
-    # Resolve path to absolute
+    # Resolve paths to absolute
     video_dir = resolve_path(request.video_directory)
+    model_path = resolve_path(request.classifier_model_path)
 
     # Validate directory exists
     if not os.path.isdir(video_dir):
         raise HTTPException(
             status_code=404,
             detail=f"Directory not found: {video_dir}"
+        )
+
+    # Validate model path exists
+    if not os.path.exists(model_path):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Model not found: {model_path}"
         )
 
     # Find video files
@@ -200,13 +209,14 @@ async def batch_process(
         async def emit_to_websocket(event: dict, jid=job_id):
             await manager.send_to_job(jid, event)
 
-        async def run_processing(vpath=video_path_str, jid=job_id, emit=emit_to_websocket):
+        async def run_processing(vpath=video_path_str, jid=job_id, emit=emit_to_websocket, mpath=model_path):
             processor.jobs[jid]["status"] = JobStatus.PENDING
             await processor.process_video(
                 video_path=vpath,
                 on_event=emit,
                 frame_selection_method=request.frame_selection_method,
-                num_select=request.num_select
+                num_select=request.num_select,
+                classifier_model_path=mpath
             )
 
         background_tasks.add_task(run_processing)

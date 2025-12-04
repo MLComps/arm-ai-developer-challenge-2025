@@ -742,8 +742,8 @@ if __name__ == '__main__':
     print("="*70)
     
     # Configure paths
-    video_path = './video-assets/normal/1.mp4'  # Your test video
-    classifier_model_path = './classifier-models/train-fox-background/weights/best.pt'
+    video_path = '/Users/mbohbless/Downloads/videoplayback.mp4'  # Your test video
+    classifier_model_path = '/Users/mbohbless/Software/competitions/arm-ai-developer-challenge-2025/classifier-models/train-fox-deer-background/weights/best.pt'
     save_keyframes_dir = './agent_keyframes'
     save_classified_dir = './agent_classified'  # NEW: Save classified images by class
     

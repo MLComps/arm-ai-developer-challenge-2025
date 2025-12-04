@@ -65,10 +65,16 @@ class VideoProcessor:
         # Job tracking
         self.jobs: Dict[str, Dict[str, Any]] = {}
 
-    def _get_classifier(self) -> FrameClassifier:
-        """Lazy load classifier model"""
-        if self.classifier is None:
-            self.classifier = FrameClassifier(self.classifier_model_path)
+    def _get_classifier(self, model_path: Optional[str] = None) -> FrameClassifier:
+        """Lazy load classifier model, or reload if different model requested"""
+        target_path = model_path or self.classifier_model_path
+
+        # Reload classifier if a different model is requested
+        if self.classifier is None or (model_path and model_path != self.classifier_model_path):
+            logger.info(f"Loading classifier model: {target_path}")
+            self.classifier = FrameClassifier(target_path)
+            self.classifier_model_path = target_path
+
         return self.classifier
 
     def _create_job(self, video_path: str) -> str:
@@ -104,7 +110,8 @@ class VideoProcessor:
         samples_per_region: int = 3,
         motion_threshold: float = 0.02,
         save_keyframes: bool = True,
-        save_classified: bool = True
+        save_classified: bool = True,
+        classifier_model_path: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Process a video through the complete pipeline.
@@ -220,7 +227,7 @@ class VideoProcessor:
 
             # Phase 3: Classification
             logger.info(f"[{job_id}] Phase 3: Classification")
-            classifier = self._get_classifier()
+            classifier = self._get_classifier(classifier_model_path)
             classifications = await asyncio.to_thread(
                 classifier.classify_keyframes,
                 selected_frames,
