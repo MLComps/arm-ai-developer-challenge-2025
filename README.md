@@ -2,7 +2,7 @@
 
 A sophisticated, self-aware edge AI system for autonomous wildlife monitoring that runs continuously on ARM-based devices without cloud dependency. Built for the ARM AI Developer Challenge 2025.
 
-[System View](./assets/wildlife-system.png)
+![System View](./assets/wildlife-system.png)
 
 ## Overview
 
