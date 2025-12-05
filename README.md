@@ -261,6 +261,29 @@ Supports motion detection → keyframe sampling → image classification → VLM
 └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
 ```
 
+## External Dependencies
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     EXTERNAL SERVICES                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                    Ollama Server                         │    │
+│  │                                                          │    │
+│  │  Endpoint: http://localhost:11434/api/generate           │    │
+│  │  Model: qwen3-vl:2b (Vision Language Model)              │    │
+│  │                                                          │    │
+│  │  Purpose: Verify classifier predictions by analyzing     │    │
+│  │           images and providing observations              │    │
+│  │                                                          │    │
+│  │  Input: Base64 encoded image + verification prompt       │    │
+│  │  Output: VALID: YES/NO + OBSERVATION text                │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Prerequisites
 
 - Python 3.11+
