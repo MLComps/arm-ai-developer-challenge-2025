@@ -4,11 +4,29 @@ A sophisticated, self-aware edge AI system for autonomous wildlife monitoring th
 
 Demo: [Video 1](https://www.youtube.com/watch?v=kxtysijYQKw) | [Video 2](https://www.youtube.com/watch?v=gR7cQX7ev9g) | [Video 3](https://www.youtube.com/shorts/ZV12m5BS5pM)
 
-![System View](./assets/wildlife-system.png)
-
 ## Overview
 
 Ambient Wildlife Guard demonstrates enterprise-grade edge AI capabilities by deploying a complete wildlife classification pipeline on resource-constrained ARM devices. The system processes camera trap footage through an intelligent 6-phase pipeline with **98% computational load reduction** and **75% memory optimization** while maintaining **95%+ classification accuracy**.
+
+## Model Performance Comparison
+
+### Untrained Model (Baseline)
+
+Random initialization with zero training on wildlife data.
+
+![Untrained Classification Results](./assets/2.png)
+
+### Trained Model (50 Epochs)
+
+Fine-tuned on 225 training images after optimization.
+
+![Trained Classification Results](./assets/1.png)
+
+### System Recommendations
+
+Autonomous decision-making with confidence thresholds and VLM verification.
+
+![Recommended Actions](./assets/3.png)
 
 ## Core Features
 
