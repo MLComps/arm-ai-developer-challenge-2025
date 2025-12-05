@@ -2,6 +2,8 @@
 
 A sophisticated, self-aware edge AI system for autonomous wildlife monitoring that runs continuously on ARM-based devices without cloud dependency. Built for the ARM AI Developer Challenge 2025.
 
+Demo: [Video 1](https://www.youtube.com/watch?v=kxtysijYQKw) | [Video 2](https://www.youtube.com/watch?v=gR7cQX7ev9g) | [Video 3](https://www.youtube.com/shorts/ZV12m5BS5pM)
+
 ![System View](./assets/wildlife-system.png)
 
 ## Overview
@@ -106,10 +108,8 @@ Docs at http://0.0.0.0:8000/docs
 
 Access the API and interactive documentation at `http://localhost:8000`
 
-# TODO
+### What's next for Ambient Agent for Wildlife Monitoring on Edge
 
-- Explore executorch for Ultralytics
-- Human detection system
-- Animal activity tracker
-- Ollama installation instruction
-- System Arch.
+Explore executorch for Ultralytics
+Human-in-the-loop labelling
+Animal activity tracker
