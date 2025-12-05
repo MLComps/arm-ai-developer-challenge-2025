@@ -143,7 +143,7 @@ Supports motion detection → keyframe sampling → image classification → VLM
 └─────────────────────┘     └──────────────────────────────────────────┘
 ```
 
-### VLM Verification Flow
+## VLM Verification Flow
 
 ```
 ┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
@@ -243,14 +243,15 @@ Supports motion detection → keyframe sampling → image classification → VLM
 └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
 ```
 
-### Prerequisites
+## Prerequisites
 
 - Python 3.11+
+- uv (Python virtual environment)
 - [Ollama](https://ollama.ai) (for VLM verification)
 - ARM-based device (or compatible development machine)
 - 8GB+ RAM recommended
 
-### Installation
+## Installation
 
 ```bash
 # Clone the repository
