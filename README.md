@@ -6,7 +6,7 @@ Demo: [Video 1](https://www.youtube.com/watch?v=kxtysijYQKw) | [Video 2](https:/
 
 ## Overview
 
-Ambient Wildlife Guard demonstrates enterprise-grade edge AI capabilities by deploying a complete wildlife classification pipeline on resource-constrained ARM devices. The system processes camera trap footage through an intelligent 6-phase pipeline with **98% computational load reduction** and **75% memory optimization** while maintaining **95%+ classification accuracy**.
+Ambient Wildlife Guard demonstrates enterprise-grade edge AI capabilities by deploying a complete wildlife classification pipeline on resource-constrained ARM devices. The system processes camera trap footage through an intelligent 6-phase pipeline optimized for edge deployment.
 
 ## Model Performance Comparison
 
