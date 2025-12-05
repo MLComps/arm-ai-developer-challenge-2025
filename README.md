@@ -110,6 +110,6 @@ Access the API and interactive documentation at `http://localhost:8000`
 
 ### What's next for Ambient Agent for Wildlife Monitoring on Edge
 
-Explore executorch for Ultralytics
-Human-in-the-loop labelling
-Animal activity tracker
+- Explore executorch for Ultralytics
+- Human-in-the-loop labelling
+- Animal activity tracker
