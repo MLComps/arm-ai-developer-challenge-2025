@@ -5,7 +5,7 @@ A sophisticated, self-aware edge AI system for autonomous wildlife monitoring th
 Demo: [Video 1](https://www.youtube.com/watch?v=kxtysijYQKw) | [Video 2](https://www.youtube.com/watch?v=gR7cQX7ev9g) | [Video 3](https://www.youtube.com/shorts/ZV12m5BS5pM)
 
 - Dataset - [Link](https://www.kaggle.com/datasets/silviamatoke/serengeti-dataset/data)
-- More about Serengeti - [Link](https://lila.science/datasets/snapshot-serengeti/)
+- More about Serengeti Dataset - [Link](https://lila.science/datasets/snapshot-serengeti/)
 
 ## Overview
 
