@@ -26,22 +26,221 @@ Ambient Wildlife Guard demonstrates enterprise-grade edge AI capabilities by dep
 A modular, extensible wildlife monitoring pipeline designed for edge devices.
 Supports motion detection → keyframe sampling → image classification → VLM verification → data drift detection.
 
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           AMBIENT WILDLIFE MONITORING                            │
+│                              System Architecture                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐     WebSocket      ┌──────────────────────────────────────────────┐
+│              │◄──────────────────►│                                              │
+│   Frontend   │                    │              FastAPI Backend                 │
+│   (HTML/JS)  │    REST API        │                                              │
+│              │◄──────────────────►│                                              │
+└──────────────┘                    └──────────────────────────────────────────────┘
+                                                        │
+                                                        ▼
+                                    ┌──────────────────────────────────────────────┐
+                                    │           Video Processing Pipeline          │
+                                    │                                              │
+                                    │  ┌─────────┐  ┌─────────┐  ┌─────────────┐  │
+                                    │  │ Motion  │─►│Keyframe │─►│   Frame     │  │
+                                    │  │Detection│  │Sampling │  │  Selection  │  │
+                                    │  └─────────┘  └─────────┘  └─────────────┘  │
+                                    │       │            │              │          │
+                                    │       ▼            ▼              ▼          │
+                                    │  ┌─────────────────────────────────────────┐ │
+                                    │  │         YOLO Classification             │ │
+                                    │  │      (Dynamic Model Selection)          │ │
+                                    │  └─────────────────────────────────────────┘ │
+                                    │                      │                       │
+                                    │                      ▼                       │
+                                    │  ┌─────────────────────────────────────────┐ │
+                                    │  │      VLM Verification (Ollama)          │ │
+                                    │  │         qwen3-vl:2b Model               │ │
+                                    │  └─────────────────────────────────────────┘ │
+                                    │                      │                       │
+                                    │       ┌──────────────┴──────────────┐        │
+                                    │       ▼                             ▼        │
+                                    │  ┌──────────┐              ┌──────────────┐  │
+                                    │  │  Drift   │              │  Retraining  │  │
+                                    │  │Detection │─────────────►│Recommendation│  │
+                                    │  └──────────┘              └──────────────┘  │
+                                    └──────────────────────────────────────────────┘
 ```
 
-┌────────────────┐     ┌───────────────────┐      ┌──────────────────────┐
-│ Motion Detector │ ─→ │ Keyframe Sampler  │ ─→   │ Classifier Model     │
-└────────────────┘     └───────────────────┘      └──────────────────────┘
-                                                              │
-                                                              ▼
-                                           ┌─────────────────────────────┐
-                                           │ Vision-Language Model (VLM) │
-                                           └─────────────────────────────┘
-                                                              │
-                                                              ▼
-                                           ┌─────────────────────────────┐
-                                           │ Data Drift & Confidence     │
-                                           └─────────────────────────────┘
+## Processing Pipeline
 
+### Phase Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         VIDEO PROCESSING PIPELINE                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+     ┌─────────┐
+     │  Video  │
+     │  Input  │
+     └────┬────┘
+          │
+          ▼
+┌─────────────────────┐
+│  PHASE 1: Motion    │     ┌──────────────────────────────────────────┐
+│     Detection       │────►│ - MOG2 Background Subtraction            │
+│                     │     │ - Identifies frames with movement        │
+│   (MOG2 Algorithm)  │     │ - Groups into motion regions             │
+└─────────┬───────────┘     └──────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  PHASE 2: Keyframe  │     ┌──────────────────────────────────────────┐
+│     Sampling        │────►│ - Samples frames from each motion region │
+│                     │     │ - Configurable samples per region        │
+│                     │     │ - Saves keyframe images                  │
+└─────────┬───────────┘     └──────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────┐
+│ PHASE 2.5: Frame    │     ┌──────────────────────────────────────────┐
+│    Selection        │────►│ - Balanced selection method              │
+│                     │     │ - Selects 9 diverse frames               │
+│ (Diversity-based)   │     │ - Reduces redundancy                     │
+└─────────┬───────────┘     └──────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  PHASE 3: YOLO      │     ┌──────────────────────────────────────────┐
+│   Classification    │────►│ - Dynamic model selection                │
+│                     │     │ - Classes: background, fox, deer, etc.   │
+│  (Dynamic Models)   │     │ - Confidence scores per class            │
+└─────────┬───────────┘     └──────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  PHASE 4: VLM       │     ┌──────────────────────────────────────────┐
+│   Verification      │────►│ - Samples 5 lowest-confidence frames     │
+│                     │     │ - Ollama qwen3-vl:2b model               │
+│  (Ollama VLM)       │     │ - Returns: class_valid + observation     │
+└─────────┬───────────┘     └──────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  PHASE 5: Drift     │     ┌──────────────────────────────────────────┐
+│    Detection        │────►│ - Analyzes mismatch patterns             │
+│                     │     │ - Calculates drift score                 │
+│                     │     │ - Monitors model degradation             │
+└─────────┬───────────┘     └──────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────┐
+│  PHASE 6: Retrain   │     ┌──────────────────────────────────────────┐
+│   Recommendation    │────►│ - Aggregate confidence calculation       │
+│                     │     │ - Threshold: 0.7 (70%)                   │
+│                     │     │ - Actions: URGENT_RETRAIN, RETRAIN,      │
+│                     │     │            MONITOR_CLOSELY, CONTINUE     │
+└─────────────────────┘     └──────────────────────────────────────────┘
+```
+
+### VLM Verification Flow
+
+```
+┌──────────────────┐         ┌──────────────────┐         ┌──────────────────┐
+│   Classified     │         │   VLM Verifier   │         │  Ollama Server   │
+│     Frames       │         │                  │         │  (qwen3-vl:2b)   │
+└────────┬─────────┘         └────────┬─────────┘         └────────┬─────────┘
+         │                            │                            │
+         │  1. 9 classified frames    │                            │
+         │───────────────────────────►│                            │
+         │                            │                            │
+         │                            │  2. Select 5 frames        │
+         │                            │     (3 lowest conf +       │
+         │                            │      2 random)             │
+         │                            │                            │
+         │                            │  3. For each frame:        │
+         │                            │     POST /api/generate     │
+         │                            │────────────────────────────►
+         │                            │     {image, prompt}        │
+         │                            │                            │
+         │                            │  4. VLM Response           │
+         │                            │◄────────────────────────────
+         │                            │     VALID: YES/NO          │
+         │                            │     OBSERVATION: ...       │
+         │                            │                            │
+         │  5. Verification results   │                            │
+         │◄───────────────────────────│                            │
+         │     - class_valid          │                            │
+         │     - observation          │                            │
+         │     - validity_rate        │                            │
+```
+
+## Technology Stack
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       TECHNOLOGY STACK                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Frontend          │  Backend           │  ML/AI                │
+│  ─────────────────────────────────────────────────────────────  │
+│  • HTML5           │  • Python 3.11     │  • YOLO (Ultralytics) │
+│  • CSS3            │  • FastAPI         │  • OpenCV             │
+│  • JavaScript      │  • Uvicorn         │  • NumPy              │
+│  • WebSocket API   │  • Pydantic        │  • Ollama             │
+│                    │  • asyncio         │  • qwen3-vl:2b        │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Communication                    │  Storage                    │
+│  ────────────────────────────────────────────────────────────   │
+│  • REST API                       │  • File system (videos)     │
+│  • WebSocket (real-time)          │  • File system (models)     │
+│  • JSON data format               │  • File system (output)     │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Recommendation Logic
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    RECOMMENDATION DECISION TREE                  │
+└─────────────────────────────────────────────────────────────────┘
+
+                    Calculate Aggregate Confidence
+                    ════════════════════════════════
+                    aggregate_conf = avg_classifier_conf × vlm_validity_rate
+
+                                    │
+                                    ▼
+                    ┌───────────────────────────────┐
+                    │  aggregate_conf < 0.7 (70%)? │
+                    └───────────────┬───────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                   YES                              NO
+                    │                               │
+                    ▼                               ▼
+        ┌───────────────────┐           ┌───────────────────┐
+        │ vlm_validity_rate │           │ aggregate_conf    │
+        │    < 0.5 (50%)?   │           │    > 0.85?        │
+        └─────────┬─────────┘           └─────────┬─────────┘
+                  │                               │
+        ┌─────────┴─────────┐           ┌─────────┴─────────┐
+        │                   │           │                   │
+       YES                  NO         YES                  NO
+        │                   │           │                   │
+        ▼                   ▼           ▼                   ▼
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│    URGENT     │  │   RETRAIN     │  │   CONTINUE    │  │    MONITOR    │
+│    RETRAIN    │  │ RECOMMENDED   │  │  MONITORING   │  │    CLOSELY    │
+│               │  │               │  │               │  │               │
+│ Stop using    │  │ Schedule      │  │ No action     │  │ Increase      │
+│ model in      │  │ retraining    │  │ required      │  │ monitoring    │
+│ production    │  │               │  │               │  │ frequency     │
+└───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘
 ```
 
 ### Prerequisites
