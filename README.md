@@ -3,6 +3,7 @@
 A sophisticated, self-aware edge AI system for autonomous wildlife monitoring that runs continuously on ARM-based devices without cloud dependency. Built for the ARM AI Developer Challenge 2025.
 
 Demo: [Video 1](https://www.youtube.com/watch?v=kxtysijYQKw) | [Video 2](https://www.youtube.com/watch?v=gR7cQX7ev9g) | [Video 3](https://www.youtube.com/shorts/ZV12m5BS5pM)
+Demo: [Video 1](https://www.youtube.com/watch?v=kxtysijYQKw) | [Video 2](https://www.youtube.com/watch?v=gR7cQX7ev9g) | [Video 3](https://www.youtube.com/shorts/ZV12m5BS5pM) | [[Video 4]](https://www.youtube.com/watch?v=064JLW0dzmU)
 
 - Dataset - [Link](https://www.kaggle.com/datasets/silviamatoke/serengeti-dataset/data)
 - More about Serengeti Dataset - [Link](https://lila.science/datasets/snapshot-serengeti/)
